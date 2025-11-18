@@ -8,15 +8,27 @@ $(function () {
 });
 
 function fetchQuotes(topic, count) {
-    const cnt = Number(count);
-   // TODO: Modify to use $.get() or $.ajax()
-    $.get(`https://wp.zybooks.com/quotes.php`, {
-        topic: topic, count: cnt }, function(data) {
-        renderQuotesResponse(data, topic);
-    }, "json").fail(function(jqXHR, textStatus, errorThrown){
-        $("#quotes").html(`<p>Topic '${$("#topicSelection.selected")}' not found</p>`);
-        console.log("AJAX FAIL:", textStatus, errorThrown);
-    });
+    $.get(
+        "https://wp.zybooks.com/quotes.php",
+        { topic: topic, count: count },
+        function(data) {
+
+            if (Array.isArray(data)) {
+                let html = "<ol>";
+                data.forEach(function(q) {
+                    html += `<li>${q.quote} - ${q.source}</li>`;
+                });
+                html += "</ol>";
+                $("#quotes").html(html);
+            }
+
+            else if (data.error) {
+                $("#quotes").text(data.error);
+            }
+        },
+        "json"
+    );
+
 
     // let html = "<ol>";
     // for (let c = 0; c < count; c++) {
@@ -36,7 +48,7 @@ function renderQuotesResponse(data, topic) {
     html += "</ol>";
     $("#quotes").html(html);
     } else if (Array.isArray(data) && data.length === 0) {
-    $("#quotes").html(`<p>No quotes found for topic '${escapeHtml(topic)}'.</p>`);
+    $("#quotes").html(`<p>Topic '${escapeHtml(topic)}'not found</p>`);
     } else if (data && data.error) {
     $("#quotes").html(`<p>${escapeHtml(data.error)}</p>`);
     } else {
@@ -44,3 +56,11 @@ function renderQuotesResponse(data, topic) {
     console.log("Unexpected response:", data);
     }
 }
+
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+    }
